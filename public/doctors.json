@@ -1,0 +1,40 @@
+{
+    "doctors": [
+      {
+        "id": "1",
+        "name": "Dr. Emily Chen",
+        "specialization": "Cardiology",
+        "email": "emily.chen@hospital.com",
+        "phone": "+1 (555) 123-4567",
+        "address": "123 Heart Street, Cardiac City",
+        "bio": "Experienced cardiologist with 15 years of practice in heart health."
+      },
+      {
+        "id": "2",
+        "name": "Dr. Michael Rodriguez",
+        "specialization": "Neurology",
+        "email": "michael.rodriguez@hospital.com", 
+        "phone": "+1 (555) 987-6543",
+        "address": "456 Brain Boulevard, Neuro District",
+        "bio": "Specialist in neurological disorders and advanced brain treatments."
+      },
+      {
+        "id": "3", 
+        "name": "Dr. Sarah Kim",
+        "specialization": "Cardiology",
+        "email": "sarah.kim@hospital.com",
+        "phone": "+1 (555) 246-8135", 
+        "address": "789 Pulse Avenue, Heart Center",
+        "bio": "Renowned expert in cardiovascular interventions and research."
+      },
+      {
+        "id": "4",
+        "name": "Dr. David Thompson", 
+        "specialization": "Pediatrics",
+        "email": "david.thompson@hospital.com",
+        "phone": "+1 (555) 369-2580",
+        "address": "321 Child Lane, Pediatric Plaza", 
+        "bio": "Compassionate pediatrician dedicated to children's health and wellness."
+      }
+    ]
+  }
