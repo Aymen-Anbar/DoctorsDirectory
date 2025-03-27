@@ -1,7 +1,7 @@
 // src/app/admin/doctors/page.tsx
 'use client';
 import { useState, useEffect } from 'react';
-import { createClientSupabaseClient } from '@/lib/supabase-client';
+import { createSupabaseClient } from '@/lib/supabase-client';
 import { Doctor } from '@/types/doctor';
 import { toast } from 'react-hot-toast'; // Optional: for better notifications
 import Image from 'next/image';
@@ -12,7 +12,7 @@ export default function AdminDoctorsPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const supabase = createClientSupabaseClient();
+  const supabase = createSupabaseClient();
 
   // Fetch doctors
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function AdminDoctorsPage() {
         if (data) {
           setDoctors(data);
         }
-      } catch (err: any) {
+      } catch (err) {
         console.error("Exception fetching doctors:", err);
         setError('An unexpected error occurred while loading doctors');
       } finally {
@@ -48,88 +48,80 @@ export default function AdminDoctorsPage() {
     }
     
     fetchDoctors();
-  }, []);
+  }, [supabase]); // Add supabase as a dependency
 
-// Add new doctor
-// Update the handleAddDoctor function
-
-const handleAddDoctor = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setIsSubmitting(true);
-  setError(null);
-  
-  try {
-    // Validate required fields
-    const requiredFields = ['name', 'specialization', 'email', 'phone', 'address', 'bio'];
-    for (const field of requiredFields) {
-      if (!newDoctor[field as keyof typeof newDoctor]) {
-        setError(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+  // Add new doctor
+  const handleAddDoctor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
+    
+    try {
+      // Validate required fields
+      const requiredFields = ['name', 'specialization', 'email', 'phone', 'address', 'bio'];
+      for (const field of requiredFields) {
+        if (!newDoctor[field as keyof typeof newDoctor]) {
+          setError(`${field.charAt(0).toUpperCase() + field.slice(1)} is required`);
+          setIsSubmitting(false);
+          return;
+        }
+      }
+      
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (newDoctor.email && !emailRegex.test(newDoctor.email)) {
+        setError('Please enter a valid email address');
         setIsSubmitting(false);
         return;
       }
-    }
-    
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (newDoctor.email && !emailRegex.test(newDoctor.email)) {
-      setError('Please enter a valid email address');
+      
+      // Generate a unique ID - choose one of these approaches:
+      const id = crypto.randomUUID(); // UUID generation
+      
+      // Include the ID in the insert data
+      const doctorToInsert = {
+        id: id,
+        name: newDoctor.name,
+        specialization: newDoctor.specialization,
+        email: newDoctor.email,
+        phone: newDoctor.phone,
+        address: newDoctor.address,
+        bio: newDoctor.bio
+      };
+      
+      console.log("Attempting to insert doctor:", doctorToInsert);
+      
+      const { data, error: supabaseError } = await supabase
+        .from('doctors')
+        .insert(doctorToInsert)
+        .select();
+      
+      if (supabaseError) {
+        console.error("Supabase error details:", {
+          code: supabaseError.code,
+          message: supabaseError.message,
+          details: supabaseError.details,
+          hint: supabaseError.hint
+        });
+        setError(`Failed to add doctor: ${supabaseError.message}`);
+        return;
+      }
+      
+      if (data && data.length > 0) {
+        console.log("Successfully added doctor:", data[0]);
+        setDoctors([...doctors, data[0]]);
+        setNewDoctor({}); // Reset form
+        toast?.success('Doctor added successfully!');
+      } else {
+        console.error("No data returned after insert");
+        setError('Failed to add doctor: No data returned from database');
+      }
+    } catch (err) {
+      console.error("Exception adding doctor:", err);
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-    
-    // Generate a unique ID - choose one of these approaches:
-    
-    // Option 1: Generate a UUID (recommended)
-    const id = crypto.randomUUID();
-    
-    // Option 2: Generate a numeric ID (if your ID column is numeric)
-    // const id = Date.now(); // Simple timestamp-based ID
-    
-    // Include the ID in the insert data
-    const doctorToInsert = {
-      id: id, // Add the generated ID
-      name: newDoctor.name,
-      specialization: newDoctor.specialization,
-      email: newDoctor.email,
-      phone: newDoctor.phone,
-      address: newDoctor.address,
-      bio: newDoctor.bio
-    };
-    
-    console.log("Attempting to insert doctor:", doctorToInsert);
-    
-    const { data, error: supabaseError } = await supabase
-      .from('doctors')
-      .insert(doctorToInsert)
-      .select();
-    
-    if (supabaseError) {
-      console.error("Supabase error details:", {
-        code: supabaseError.code,
-        message: supabaseError.message,
-        details: supabaseError.details,
-        hint: supabaseError.hint
-      });
-      setError(`Failed to add doctor: ${supabaseError.message}`);
-      return;
-    }
-    
-    if (data && data.length > 0) {
-      console.log("Successfully added doctor:", data[0]);
-      setDoctors([...doctors, data[0]]);
-      setNewDoctor({}); // Reset form
-      toast?.success('Doctor added successfully!');
-    } else {
-      console.error("No data returned after insert");
-      setError('Failed to add doctor: No data returned from database');
-    }
-  } catch (err: any) {
-    console.error("Exception adding doctor:", err);
-    setError(`An unexpected error occurred: ${err.message || 'Unknown error'}`);
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   // Delete doctor
   const handleDeleteDoctor = async (id: string) => {
@@ -156,16 +148,15 @@ const handleAddDoctor = async (e: React.FormEvent) => {
       
       setDoctors(doctors.filter(doctor => doctor.id !== id));
       toast?.success('Doctor deleted successfully!');
-    } catch (err: any) {
+    } catch (err) {
       console.error("Exception deleting doctor:", err);
-      toast?.error(`An unexpected error occurred: ${err.message || 'Unknown error'}`);
     }
   };
 
   // Handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setNewDoctor({...newDoctor, [name]: value});
+    setNewDoctor({ ...newDoctor, [name]: value });
   };
 
   return (

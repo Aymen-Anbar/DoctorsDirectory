@@ -1,6 +1,7 @@
+// src/app/login/page.tsx
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { createClientSupabaseClient } from '@/lib/supabase-client';
+import { createSupabaseClient } from '@/lib/supabase-client'; // Correct import
 import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
@@ -8,7 +9,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const supabase = createClientSupabaseClient();
+  const supabase = createSupabaseClient();  // Correct usage
   const router = useRouter();
 
   const checkAndRedirect = useCallback(async () => {
@@ -20,8 +21,11 @@ export default function LoginPage() {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
       // Log session details
-      console.log('Session data:', session);
-      console.log('Session error:', sessionError);
+      if (sessionError) {
+        console.error('Session error:', sessionError);
+      } else {
+        console.log('Session data:', session);
+      }
 
       // Get admin email from environment
       const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
@@ -65,7 +69,7 @@ export default function LoginPage() {
       console.log('Attempting login...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
       console.log('Login response:', { data, error });
@@ -83,9 +87,9 @@ export default function LoginPage() {
         await supabase.auth.signOut();
         setError('Access denied. Admin credentials required.');
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Login failed');
+      setError('An error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -127,8 +131,8 @@ export default function LoginPage() {
             type="submit"
             disabled={isLoading}
             className={`w-full text-white py-2 rounded ${
-              isLoading 
-                ? 'bg-gray-400 cursor-not-allowed' 
+              isLoading
+                ? 'bg-gray-400 cursor-not-allowed'
                 : 'bg-blue-500 hover:bg-blue-600'
             }`}
           >
